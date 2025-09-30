@@ -1,7 +1,7 @@
 import { jsxDEV } from "react/jsx-dev-runtime";
 import React from "react";
 import { AbsoluteFill, useCurrentFrame, useVideoConfig, Img, interpolate, staticFile } from "remotion";
-const Scene3D = ({ trackingData }) => {
+const Scene3D = ({ trackingData, trackingMode }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   if (!trackingData || trackingData.length === 0) {
@@ -18,8 +18,16 @@ const Scene3D = ({ trackingData }) => {
   const dataIndex = Math.min(Math.floor(frame), trackingData.length - 1);
   const dataPoint = trackingData[dataIndex] || trackingData[trackingData.length - 1];
   const { rotation, position } = dataPoint;
-  const translateX = interpolate(position.x, [-10, 10], [-10, 10], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-  const translateY = interpolate(position.y, [-5, 5], [-5, 5], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const isBodyMode = trackingMode === "body";
+  const assetSrc = isBodyMode ? staticFile("full_body_avatar.png") : staticFile("avatar_head.png");
+  const objectWidth = isBodyMode ? "40%" : "60%";
+  const maxObjectWidth = isBodyMode ? "216px" : "300px";
+  const aspectRatio = isBodyMode ? "9 / 16" : "1";
+  const objectVerticalShift = isBodyMode ? "translateY(0%)" : "translateY(-10%)";
+  const posXRange = isBodyMode ? [-5, 5] : [-10, 10];
+  const posYRange = isBodyMode ? [-5, 5] : [-5, 5];
+  const translateX = interpolate(position.x, [-10, 10], posXRange, { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const translateY = interpolate(position.y, [-5, 5], posYRange, { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const scale = interpolate(position.z, [50, 150], [1.2, 0.8], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const transform = `
         translateX(${translateX}%) 
@@ -49,7 +57,9 @@ const Scene3D = ({ trackingData }) => {
       textAlign: "center",
       textShadow: "2px 2px 4px rgba(0,0,0,0.5)"
     }, children: [
-      "Generated Clip",
+      "Generated Clip (",
+      trackingMode.toUpperCase(),
+      " Tracking)",
       /* @__PURE__ */ jsxDEV("div", { style: { fontSize: "1rem", marginTop: "5px" }, children: [
         "Frame ",
         frame,
@@ -58,43 +68,43 @@ const Scene3D = ({ trackingData }) => {
         "\xB0"
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 67,
+        lineNumber: 83,
         columnNumber: 17
       })
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 58,
+      lineNumber: 74,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("div", { style: {
-      width: "60%",
-      maxWidth: "300px",
-      aspectRatio: "1",
+      width: objectWidth,
+      maxWidth: maxObjectWidth,
+      aspectRatio,
       transformStyle: "preserve-3d",
       transform
       // We rely on Remotion frame update, so no CSS transition is necessary here
     }, children: /* @__PURE__ */ jsxDEV(
       Img,
       {
-        src: staticFile("avatar_head.png"),
+        src: assetSrc,
         style: {
           width: "100%",
           height: "100%",
           objectFit: "contain",
           // Small adjustment to lift the head slightly off the bottom center
-          transform: "translateY(-10%)"
+          transform: objectVerticalShift
         }
       },
       void 0,
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 81,
+        lineNumber: 97,
         columnNumber: 17
       }
     ) }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 73,
+      lineNumber: 89,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("div", { style: {
@@ -107,23 +117,23 @@ const Scene3D = ({ trackingData }) => {
       textShadow: "3px 3px 6px rgba(0,0,0,0.8)"
     }, children: "PERFORMANCE CAPTURED" }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 94,
+      lineNumber: 110,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 49,
+    lineNumber: 65,
     columnNumber: 9
   });
 };
-const MyComposition = ({ trackingData }) => {
-  return /* @__PURE__ */ jsxDEV(AbsoluteFill, { children: /* @__PURE__ */ jsxDEV(Scene3D, { trackingData }, void 0, false, {
+const MyComposition = ({ trackingData, trackingMode }) => {
+  return /* @__PURE__ */ jsxDEV(AbsoluteFill, { children: /* @__PURE__ */ jsxDEV(Scene3D, { trackingData, trackingMode }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 113,
+    lineNumber: 129,
     columnNumber: 13
   }) }, void 0, false, {
     fileName: "<stdin>",
-    lineNumber: 112,
+    lineNumber: 128,
     columnNumber: 9
   });
 };

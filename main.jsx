@@ -27,7 +27,7 @@ const generateTrackingData = (frames) => {
   }
   return data;
 };
-const CameraCapture = ({ videoRef, isCapturing, onCaptureStart, onCaptureStop, onCameraToggle, isFrontCamera }) => {
+const CameraCapture = ({ videoRef, isCapturing, onCaptureStart, onCaptureStop, onCameraToggle, isFrontCamera, trackingMode, onTrackingModeChange }) => {
   return /* @__PURE__ */ jsxDEV("div", { className: "video-capture-area", children: [
     /* @__PURE__ */ jsxDEV(
       "video",
@@ -46,23 +46,39 @@ const CameraCapture = ({ videoRef, isCapturing, onCaptureStart, onCaptureStop, o
         columnNumber: 13
       }
     ),
-    /* @__PURE__ */ jsxDEV("div", { className: "controls", style: { position: "absolute", bottom: "10px", width: "100%", display: "flex", justifyContent: "center" }, children: [
-      /* @__PURE__ */ jsxDEV("button", { onClick: onCameraToggle, disabled: isCapturing, children: [
-        "Switch Camera (",
-        isFrontCamera ? "Front (User)" : "Back (Environment)",
-        ")"
+    /* @__PURE__ */ jsxDEV("div", { className: "controls", style: { position: "absolute", bottom: "10px", width: "100%", display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "10px" }, children: [
+      /* @__PURE__ */ jsxDEV("select", { value: trackingMode, onChange: (e) => onTrackingModeChange(e.target.value), disabled: isCapturing, children: [
+        /* @__PURE__ */ jsxDEV("option", { value: "face", children: "Face Tracking" }, void 0, false, {
+          fileName: "<stdin>",
+          lineNumber: 59,
+          columnNumber: 21
+        }),
+        /* @__PURE__ */ jsxDEV("option", { value: "body", children: "Body Tracking" }, void 0, false, {
+          fileName: "<stdin>",
+          lineNumber: 60,
+          columnNumber: 21
+        })
       ] }, void 0, true, {
         fileName: "<stdin>",
         lineNumber: 58,
         columnNumber: 17
       }),
-      isCapturing ? /* @__PURE__ */ jsxDEV("button", { onClick: onCaptureStop, disabled: !isCapturing, children: "Stop Capture (5s)" }, void 0, false, {
+      /* @__PURE__ */ jsxDEV("button", { onClick: onCameraToggle, disabled: isCapturing, children: [
+        "Switch Camera (",
+        isFrontCamera ? "Front" : "Back",
+        ")"
+      ] }, void 0, true, {
         fileName: "<stdin>",
         lineNumber: 62,
+        columnNumber: 17
+      }),
+      isCapturing ? /* @__PURE__ */ jsxDEV("button", { onClick: onCaptureStop, disabled: !isCapturing, children: "Stop Capture (5s)" }, void 0, false, {
+        fileName: "<stdin>",
+        lineNumber: 66,
         columnNumber: 21
       }) : /* @__PURE__ */ jsxDEV("button", { onClick: onCaptureStart, disabled: isCapturing, children: "Start Motion Capture" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 64,
+        lineNumber: 68,
         columnNumber: 21
       })
     ] }, void 0, true, {
@@ -80,6 +96,7 @@ const App = () => {
   const [trackingData, setTrackingData] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isFrontCamera, setIsFrontCamera] = useState(true);
+  const [trackingMode, setTrackingMode] = useState("face");
   const [error, setError] = useState(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -127,6 +144,12 @@ const App = () => {
       setIsFrontCamera((prev) => !prev);
     }
   };
+  const handleTrackingModeChange = (mode) => {
+    if (!isCapturing) {
+      setTrackingMode(mode);
+      setTrackingData(null);
+    }
+  };
   const handleCaptureStart = () => {
     if (!streamRef.current) {
       setError("Camera not active. Please check permissions and refresh.");
@@ -150,19 +173,23 @@ const App = () => {
   const compositionWidth = 540;
   const compositionHeight = 960;
   return /* @__PURE__ */ jsxDEV("div", { id: "app-container", children: [
-    /* @__PURE__ */ jsxDEV("h1", { children: "AI Clip Generator (Face Tracking Demo)" }, void 0, false, {
+    /* @__PURE__ */ jsxDEV("h1", { children: [
+      "AI Clip Generator (",
+      trackingMode === "face" ? "Face" : "Body",
+      " Tracking Demo)"
+    ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 165,
+      lineNumber: 177,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("p", { children: "Use your camera to generate deterministic motion data for the video composition." }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 166,
+      lineNumber: 178,
       columnNumber: 13
     }),
     error && /* @__PURE__ */ jsxDEV("p", { style: { color: "red", fontWeight: "bold" }, children: error }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 168,
+      lineNumber: 180,
       columnNumber: 23
     }),
     /* @__PURE__ */ jsxDEV(
@@ -173,20 +200,22 @@ const App = () => {
         onCaptureStart: handleCaptureStart,
         onCaptureStop: handleCaptureStop,
         onCameraToggle: handleCameraToggle,
-        isFrontCamera
+        isFrontCamera,
+        trackingMode,
+        onTrackingModeChange: handleTrackingModeChange
       },
       void 0,
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 170,
+        lineNumber: 182,
         columnNumber: 13
       }
     ),
     trackingData ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
       /* @__PURE__ */ jsxDEV("h2", { children: "Preview Clip (5 seconds)" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 181,
+        lineNumber: 195,
         columnNumber: 21
       }),
       /* @__PURE__ */ jsxDEV("div", { className: "remotion-player-wrapper", children: /* @__PURE__ */ jsxDEV(
@@ -198,7 +227,7 @@ const App = () => {
           compositionWidth,
           compositionHeight,
           controls: true,
-          inputProps: { trackingData },
+          inputProps: { trackingData, trackingMode },
           autoplay: true,
           loop: true,
           style: { width: "100%", height: "100%" }
@@ -207,31 +236,31 @@ const App = () => {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 183,
+          lineNumber: 197,
           columnNumber: 25
         }
       ) }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 182,
+        lineNumber: 196,
         columnNumber: 21
       })
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 180,
+      lineNumber: 194,
       columnNumber: 17
-    }) : /* @__PURE__ */ jsxDEV("p", { children: isCapturing ? "Capturing motion data... Please move your face!" : "Perform motion capture above to generate a clip." }, void 0, false, {
+    }) : /* @__PURE__ */ jsxDEV("p", { children: isCapturing ? `Capturing ${trackingMode} motion data... Please move!` : `Perform motion capture above to generate a ${trackingMode} clip.` }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 198,
+      lineNumber: 212,
       columnNumber: 17
     })
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 164,
+    lineNumber: 176,
     columnNumber: 9
   });
 };
 createRoot(document.getElementById("app")).render(/* @__PURE__ */ jsxDEV(App, {}, void 0, false, {
   fileName: "<stdin>",
-  lineNumber: 204,
+  lineNumber: 218,
   columnNumber: 51
 }));
