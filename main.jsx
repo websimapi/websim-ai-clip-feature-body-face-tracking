@@ -6,8 +6,37 @@ import { MyComposition } from "./composition.jsx";
 const FPS = 30;
 const DURATION_SECONDS = 5;
 const DURATION_FRAMES = DURATION_SECONDS * FPS;
-const generateTrackingData = (frames) => {
+const generateTrackingData = (frames, trackingMode) => {
   const data = [];
+  const FACE_LANDMARKS = {
+    // Points normalized relative to the tracked center (0, 0, 0)
+    nose: [0, 0, 0],
+    left_eye: [-30, 40, 5],
+    right_eye: [30, 40, 5],
+    mouth: [0, -20, 10],
+    forehead: [0, 60, -5]
+  };
+  const BODY_LANDMARKS_BASE = {
+    // Simplified structure based on a central spine, relative to hip/center mass (0, 0, 0)
+    hip: [0, 0, 0],
+    spine_mid: [0, 15, 0],
+    shoulder_center: [0, 30, 0],
+    head: [0, 45, 0],
+    // Left arm
+    l_shoulder: [-15, 30, 0],
+    l_elbow: [-25, 20, 0],
+    l_wrist: [-35, 10, 0],
+    // Right arm
+    r_shoulder: [15, 30, 0],
+    r_elbow: [25, 20, 0],
+    r_wrist: [35, 10, 0],
+    // Left leg 
+    l_knee: [-10, -20, 0],
+    l_ankle: [-10, -40, 0],
+    // Right leg
+    r_knee: [10, -20, 0],
+    r_ankle: [10, -40, 0]
+  };
   for (let i = 0; i < frames; i++) {
     const time = i / FPS;
     const seed = time * 100;
@@ -15,14 +44,30 @@ const generateTrackingData = (frames) => {
     const pitch = Math.cos(time * 1.5 + Math.PI / 2 + seed / 800) * 8 + 5;
     const roll = Math.sin(time * 4 + seed / 300) * 3;
     const posX = Math.sin(time * 1.8 + seed / 450) * 10;
-    const posY = Math.cos(time * 2.2 + seed / 700) * 5;
+    const posY = trackingMode === "body" ? Math.cos(time * 2.2 + seed / 700) * 10 : Math.cos(time * 2.2 + seed / 700) * 5;
     const posZ = 100 + Math.sin(time * 0.5 + seed / 900) * 50;
+    let landmarks = trackingMode === "body" ? { ...BODY_LANDMARKS_BASE } : FACE_LANDMARKS;
+    if (trackingMode === "body") {
+      const swing = Math.sin(time * 3);
+      landmarks.l_elbow[0] = -25 + swing * 5;
+      landmarks.l_wrist[0] = -35 + swing * 10;
+      landmarks.l_wrist[1] = 10 + Math.abs(swing * 2);
+      landmarks.r_elbow[0] = 25 - swing * 5;
+      landmarks.r_wrist[0] = 35 - swing * 10;
+      landmarks.r_wrist[1] = 10 + Math.abs(swing * 2);
+      landmarks.l_knee[0] = -10 + Math.sin(time * 2) * 2;
+      landmarks.l_knee[1] = -20 + Math.cos(time * 2) * 3;
+      landmarks.r_knee[0] = 10 - Math.sin(time * 2) * 2;
+      landmarks.r_knee[1] = -20 - Math.cos(time * 2) * 3;
+    }
     data.push({
       frame: i,
       rotation: { yaw, pitch, roll },
-      // Degrees
-      position: { x: posX, y: posY, z: posZ }
-      // Relative units 
+      // Global rotation (Degrees)
+      position: { x: posX, y: posY, z: posZ },
+      // Global translation (Relative units)
+      landmarks
+      // Landmark coordinates relative to the global position (Units: screen factor)
     });
   }
   return data;
@@ -42,7 +87,7 @@ const CameraCapture = ({ videoRef, isCapturing, onCaptureStart, onCaptureStop, o
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 54,
+        lineNumber: 118,
         columnNumber: 13
       }
     ),
@@ -50,17 +95,17 @@ const CameraCapture = ({ videoRef, isCapturing, onCaptureStart, onCaptureStop, o
       /* @__PURE__ */ jsxDEV("select", { value: trackingMode, onChange: (e) => onTrackingModeChange(e.target.value), disabled: isCapturing, children: [
         /* @__PURE__ */ jsxDEV("option", { value: "face", children: "Face Tracking" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 59,
+          lineNumber: 123,
           columnNumber: 21
         }),
         /* @__PURE__ */ jsxDEV("option", { value: "body", children: "Body Tracking" }, void 0, false, {
           fileName: "<stdin>",
-          lineNumber: 60,
+          lineNumber: 124,
           columnNumber: 21
         })
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 58,
+        lineNumber: 122,
         columnNumber: 17
       }),
       /* @__PURE__ */ jsxDEV("button", { onClick: onCameraToggle, disabled: isCapturing, children: [
@@ -69,26 +114,26 @@ const CameraCapture = ({ videoRef, isCapturing, onCaptureStart, onCaptureStop, o
         ")"
       ] }, void 0, true, {
         fileName: "<stdin>",
-        lineNumber: 62,
+        lineNumber: 126,
         columnNumber: 17
       }),
       isCapturing ? /* @__PURE__ */ jsxDEV("button", { onClick: onCaptureStop, disabled: !isCapturing, children: "Stop Capture (5s)" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 66,
+        lineNumber: 130,
         columnNumber: 21
       }) : /* @__PURE__ */ jsxDEV("button", { onClick: onCaptureStart, disabled: isCapturing, children: "Start Motion Capture" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 68,
+        lineNumber: 132,
         columnNumber: 21
       })
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 57,
+      lineNumber: 121,
       columnNumber: 13
     })
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 52,
+    lineNumber: 116,
     columnNumber: 9
   });
 };
@@ -159,7 +204,7 @@ const App = () => {
     setIsCapturing(true);
     console.log(`Starting data capture for ${DURATION_SECONDS} seconds...`);
     const simulationCallback = () => {
-      const simulatedData = generateTrackingData(DURATION_FRAMES);
+      const simulatedData = generateTrackingData(DURATION_FRAMES, trackingMode);
       setTrackingData(simulatedData);
       setIsCapturing(false);
       captureTimeoutRef.current = null;
@@ -179,17 +224,17 @@ const App = () => {
       " Tracking Demo)"
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 177,
+      lineNumber: 241,
       columnNumber: 13
     }),
     /* @__PURE__ */ jsxDEV("p", { children: "Use your camera to generate deterministic motion data for the video composition." }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 178,
+      lineNumber: 242,
       columnNumber: 13
     }),
     error && /* @__PURE__ */ jsxDEV("p", { style: { color: "red", fontWeight: "bold" }, children: error }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 180,
+      lineNumber: 244,
       columnNumber: 23
     }),
     /* @__PURE__ */ jsxDEV(
@@ -208,14 +253,14 @@ const App = () => {
       false,
       {
         fileName: "<stdin>",
-        lineNumber: 182,
+        lineNumber: 246,
         columnNumber: 13
       }
     ),
     trackingData ? /* @__PURE__ */ jsxDEV(Fragment, { children: [
       /* @__PURE__ */ jsxDEV("h2", { children: "Preview Clip (5 seconds)" }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 195,
+        lineNumber: 259,
         columnNumber: 21
       }),
       /* @__PURE__ */ jsxDEV("div", { className: "remotion-player-wrapper", children: /* @__PURE__ */ jsxDEV(
@@ -236,31 +281,31 @@ const App = () => {
         false,
         {
           fileName: "<stdin>",
-          lineNumber: 197,
+          lineNumber: 261,
           columnNumber: 25
         }
       ) }, void 0, false, {
         fileName: "<stdin>",
-        lineNumber: 196,
+        lineNumber: 260,
         columnNumber: 21
       })
     ] }, void 0, true, {
       fileName: "<stdin>",
-      lineNumber: 194,
+      lineNumber: 258,
       columnNumber: 17
     }) : /* @__PURE__ */ jsxDEV("p", { children: isCapturing ? `Capturing ${trackingMode} motion data... Please move!` : `Perform motion capture above to generate a ${trackingMode} clip.` }, void 0, false, {
       fileName: "<stdin>",
-      lineNumber: 212,
+      lineNumber: 276,
       columnNumber: 17
     })
   ] }, void 0, true, {
     fileName: "<stdin>",
-    lineNumber: 176,
+    lineNumber: 240,
     columnNumber: 9
   });
 };
 createRoot(document.getElementById("app")).render(/* @__PURE__ */ jsxDEV(App, {}, void 0, false, {
   fileName: "<stdin>",
-  lineNumber: 218,
+  lineNumber: 282,
   columnNumber: 51
 }));
